@@ -1,7 +1,7 @@
 # cloudenabler-cloud-service
 Server code for CloudEnabler project
 
-## Server Architecture (Production)
+## Server Architecture (Production mode)
 ```
 API Requests              <->  Node.js 01    <-> Cluster 01  <-> MariaDB 01 + MariaDB 02 + MariaDB 03
  ------>        HAProxy   <->                <-> Cluster 02  <-> MariaDB 04 + MariaDB 05 + MariaDB 06
@@ -20,10 +20,10 @@ API Requests              <->  Node.js 01    <-> Cluster 01  <-> MariaDB 01 + Ma
  - [HAproxy](www.haproxy.org) (Optional)
  - SSL Certificates if you want to use HTTPs
  
-## Install
+## Installation
  - `git clone` this project
  - Replace `ssl/server.key` and `ssl/server.crt` with your own certificates. 
- - Modify `project.js` for SMPT configurations
+ - Modify `project.js` for SMTP configurations
  ```
  // SMTP
  prj.SMTP_HOST   = 'smtp.gmail.com';
@@ -64,5 +64,8 @@ API Requests              <->  Node.js 01    <-> Cluster 01  <-> MariaDB 01 + Ma
  ./kcloud stop    : stop project
  ```
  
- 
+ ## Reference
+  - [Cloud Enaber API](https://api.ksmt.co/#/)
+  - [User Manual](http://www.ksmt.co/web/content/1117?unique=ce6b218d9304905aab0ac423309fbb31a817789a&download=true)
+
  
