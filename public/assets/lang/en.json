@@ -1,0 +1,22 @@
+{
+	"companyName" : "KSMT Cloud",
+    "company" : "company",
+    "account" : "account",
+    "password" : "password",
+    "confirmPassword" : "confirmPassword",
+    "forceLogin" : "forceLogin",
+    "signin" : "signin",
+    "forgotPassword" : "forgotPassword?",
+    "device" : "device",
+    "group" : "group",
+    "cloud Status" : "cloud Status",
+    "admin" : "admin",
+    "accounts" : "accounts",
+    "audit Log" : "audit Log",
+    "alarm Log" : "alarm Log",
+    "I/O Status Log" : "I/O Status Log",
+    "register" : "register",
+    "errorRequired" : "errorRequired",
+    "errorPassword" : "errorPassword",
+    "errorConfirmPassword" : "errorConfirmPassword"
+}

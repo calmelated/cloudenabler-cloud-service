@@ -1,0 +1,121 @@
+#!/usr/bin/env node
+const prj = require('../project');
+const fs = require('fs');
+const http = require('http');
+const http2 = require('spdy');
+const async = require('asyncawait/async');
+const await = require('asyncawait/await');
+const cluster = require("cluster");
+const numCPUs = require("os").cpus().length;
+const db = require(prj.LIB_PATH + '/db');
+const utils = require(prj.LIB_PATH + '/utils');
+const iosw = require(prj.LIB_PATH + '/iosw');
+const regular = require(prj.LIB_PATH + '/regular');
+const ctrlblk = require(prj.LIB_PATH + '/ctrlblk');
+const device = require(prj.LIB_PATH + '/device');
+const csid = require(prj.LIB_PATH + '/csid');
+const dbg = require(prj.LIB_PATH + '/dbg').dbg;
+const ddbg = require(prj.LIB_PATH + '/dbg').ddbg;
+const info = require(prj.LIB_PATH + '/dbg').info;
+const gstate = require(prj.GSTATE_PATH);
+const child_process = require('child_process');
+const jobQueue = require(prj.LIB_PATH + '/job-queue');
+const hostname = require('os').hostname();
+
+const forkWorker = (idx) => {
+  let worker = cluster.fork({'CLUSTER_ID': idx});
+  worker.on('message', (msg) => {
+    if(msg.func === 'shell.exec') {
+      return child_process.exec(msg.cmd);
+    }
+  });
+};
+
+// Main program start here
+async(() => {
+if (cluster.isMaster) {
+  // Create DB tables
+  let result = await(db.initDB()); // create database => tables
+  if(result && result.err) {
+    throw result.err;
+  }
+
+  // CSID sync (Only database site 1)
+  result = await(csid.init());
+  if(result.err) {
+    throw result.err;
+  }
+
+  // Reset Alarm count
+  await(regular.rstAlarmCnt());
+
+  // Setup cluster
+  forkWorker(0);
+  // for (let j = 2; j < numCPUs; j++) {
+  //     forkWorker(j);
+  // }
+
+  cluster.on('exit', (worker, code, signal) => {
+    console.warn('Worker' + worker.id + ' is dead! suicide: ' + worker.suicide);
+    if(!prj.DEBUG_MODE) { // In release mode -> restart again
+      console.warn('Restart the child after 3 sec ... ');
+      setTimeout(forkWorker, 3000);
+    }
+  });
+} else { // Forked threads start here
+  // init DB Pool/CSID for each instance
+  await(db.chkDBPools());
+  await(csid.getAll('C'));
+
+  // Reset the last undone jobs  
+  await(jobQueue.resetUnDone(hostname + '-' + process.env.CLUSTER_ID));
+
+  // For all datatbase sites
+  let querys = [];
+  for(let i = 0; i < prj.DBS.length; i++) {
+    querys['device-' + i] = device.init(i); 
+    querys['ctrlblk-' + i] = ctrlblk.init(i);
+  }
+  await(querys);
+
+  const app = require('../app');
+  const httpServer = http.createServer(app).listen(prj.HTTP_PORT, prj.HTTP_ADDR, () => {
+    info('HTTP server is listening on port ' + httpServer.address().port);
+  });
+  if(prj.ENABLE_HTTP2_SERV) {
+    const http2Server = http2.createServer({
+      key:  fs.readFileSync(prj.SSL_PATH + '/server.key'),
+      cert: fs.readFileSync(prj.SSL_PATH + '/server.crt'),
+    }, app).listen(prj.HTTP2_PORT, prj.HTTP2_ADDR, () => {
+      info('HTTP/2 server is listening on port ' + http2Server.address().port);
+    });
+  }
+}
+})();
+
+// ---------------------------------------------------------------------
+//  Clean up before exiting
+// ----------------------------------------------------------------------
+if (cluster.isMaster) {
+  process.on('exit', (e) => {
+    info('Process ' + process.pid + ' is exiting ... ');
+  });
+
+  // happens when you press Ctrl+C
+  process.on('SIGINT', () => {
+    info('Process ' + process.pid + ' is gracefully shutting down from  SIGINT (Crtl-C)');
+    process.exit(0);
+  });
+
+  // usually called with kill
+  process.on('SIGTERM', () => {
+    info('Process ' + process.pid + ': SIGTERM detected (Kill)');
+    //process.exit(0);
+  });
+
+  process.on('uncaughtException', (err) => {
+    info('Process ' + process.pid + ':');
+    info(new Date().toUTCString() + ' uncaughtException:', err.message);
+    info(err.stack);
+  });
+}

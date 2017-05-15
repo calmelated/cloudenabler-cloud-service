@@ -1,0 +1,45 @@
+input[type="checkbox"]{
+	width:20px;
+	height:20px;
+	vertical-align: middle;
+}
+
+/* 使用者訊息視窗CSS */
+.detail{
+	height:0px;
+	padding-top:0px;
+	clear:both;
+	padding-left:60px;
+	transition: all 2s;
+}
+
+.sd{
+	padding-top:20px;
+	height:100px;
+}
+
+.detail div{
+	display:none;
+}
+
+.sd div{
+	display:block;
+	white-space:normal;
+	word-break:break-all;
+}
+
+@media (min-width: 767px)
+{
+	.sidebar-collapse .sd{
+		height:0px !important;
+		padding-top:0px !important;
+	}
+
+	.detail-open{
+		cursor:pointer;
+	}
+
+	.sidebar-collapse .detail-open{
+		cursor:auto;
+	}
+}

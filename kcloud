@@ -1,0 +1,76 @@
+#!/bin/sh
+
+if [ "$PRJ" = "" ]; then _P=$(cd `dirname $0`; pwd); while [ "$_P" != "" ]; do [ -e $_P/package.json -a $_P/app.js ] && break || _P=${_P%/*}; done; [ "$_P" = "" ] && echo "Project path?" && exit -1 || PRJ=$_P; fi
+rm -f .prj-config
+. $PRJ/bin/prj-header
+#NODE="/usr/bin/node"
+
+debug() {
+  stop
+  echo "Debug $PRJ"
+  chmod +x $PRJ/bin/*
+  #DEBUG_MODE=1 $NODE --prof $PRJ/bin/www
+  DEBUG_MODE=1 $NODE $PRJ/bin/www
+}
+
+start() {
+  stop
+  echo "Start $PRJ"
+  chmod +x $PRJ/bin/*
+  local hname=`hostname`
+  if [ "$hname" = "ci.ksmt.co" -o "$hname" = "node-admin.ksmt.co" ]; then
+    NODE_ENV=production $NODE $PRJ/bin/www > /var/log/kcloud.log 2>&1 &
+    echo "<b><pre>`git log --graph --stat -5|sed 's/Author.*//g'|sed 's/commit .*//g'`</pre>" > $PRJ/public/release.html
+  else
+    NODE_ENV=production $NODE $PRJ/bin/www 2>&1 | logger -i -t 'KCloud' &
+    echo "<b><pre>`git log --graph --stat -5|sed 's/Author.*//g'|sed 's/commit .*//g'`</pre>" > $PRJ/public/release.html
+  fi
+}
+
+stop() {
+  echo "Stop $PRJ"
+  if [ "$ISBBOX" = "" ]; then # linux
+    for pid in `ps -ef|grep poseidon|grep bin/www|grep -v grep|awk '{print $2}'` `ps -ef|grep supervisor|grep -v grep|awk '{print $2}'` ; do
+      kill $pid > /dev/null 2>&1
+      kill -9 $pid > /dev/null 2>&1
+    done
+  else  # busybox, datalogger
+    for pid in `ps|grep poseidon|grep -v grep|awk '{print $1}'` ; do
+      kill $pid > /dev/null 2>&1
+      kill -9 $pid > /dev/null 2>&1
+    done
+  fi
+  return 0
+}
+
+webui() {
+  local uidir="$1"
+  [ ! -d $uidir ] && echo "$uidir no exist!" && exit 1
+  cd $uidir
+  rm -rf dist
+  git co .
+  git pull
+  npm run build:aot
+  cd -
+  [ ! -e $uidir/dist/main.*.bundle.js ] && echo "No $uidir/dist/main.*.bundle.js !" && exit 0
+
+  rm -f public/main.*.bundle.js
+  cp -rf $uidir/dist/* public
+}
+
+help() {
+  echo "$0 Usage:"
+  echo "$0 debug   : debug project"
+  echo "$0 start   : start project"
+  echo "$0 stop    : stop project"
+}
+
+if [ "$1" = "start" ]; then
+  start
+elif [ "$1" = "stop" ]; then
+  stop
+elif [ "$1" = "debug" ]; then
+  debug
+else
+  help
+fi
