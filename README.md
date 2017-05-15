@@ -65,7 +65,7 @@ API Requests              <->  Node.js 01    <-> Cluster 01  <-> MariaDB 01 + Ma
  ```
  
  ## Reference
-  - [Cloud Enaber API](https://api.ksmt.co/#/)
+  - [CloudEnabler Restful API](https://api.ksmt.co/#/)
   - [User Manual](http://www.ksmt.co/web/content/1117?unique=ce6b218d9304905aab0ac423309fbb31a817789a&download=true)
 
  
