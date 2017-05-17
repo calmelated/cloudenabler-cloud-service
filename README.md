@@ -1,3 +1,6 @@
+# cloudenabler
+The purpose of the CloudEnabler project is aim to help those factory facilities, which don't have the network accessibility, to be accessed by users' smartphone or computer from anywhere.
+
 # cloudenabler-cloud-service
 Server code for CloudEnabler project
 
